@@ -1,0 +1,388 @@
+---
+title: "ADHOC"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(ggplot2)
+```
+
+##1
+
+Create a getNodes function which generates random Nodes.
+
+```{r}
+getNodes = function(n){
+# n is numeric singleton vector
+# Nodes is a matrix with n by 2
+  
+  Nodes = matrix(runif(2*n,0,100), ncol = 2)
+  colnames(Nodes) <- c("x","y")
+  rownames(Nodes) <- 1:n
+  
+  return(Nodes)
+}
+```
+
+Check the getNodes function with random values
+
+```{r}
+
+seeds = vector(length = 5, mode = "list")
+set.seed(12345678)
+
+test.node = list()
+
+for (i in 1:5){
+  seeds[[i]] = .Random.seed
+  node = getNodes(5)
+  test.node[[i]] = node
+}
+
+test.node
+
+```
+
+##2
+Find the smallest radius Rc.
+First, Set up a helper function, findTranMat, to find a transition Matrix(Marcov Matrix for random walk).
+
+```{r}
+
+findTranMat = function(mat, R){
+  trans.mat = as.matrix(mat)
+  trans.mat[trans.mat <= R] = NA
+  trans.mat[trans.mat > R] = 0
+  trans.mat[is.na(trans.mat)] = 1
+  trans.mat = apply(trans.mat, 1, "/", rowSums(trans.mat))
+  return(trans.mat)
+}
+
+```
+
+Second, find a second largest eigen values since the largest eigen value gives us the trivial solution as well. Set up a helper function, genEigen2() which finds a second largest eigen value.
+
+```{r}
+
+getEigen2 = function(mat){ 
+  eigenvalues = eigen(mat)$values
+  SecondLargest = sort(eigenvalues, decreasing = TRUE)[2]
+  return(Mod(SecondLargest))
+}
+
+```
+
+Third, set up a function findRange() to find the range of Rc
+
+```{r}
+
+findRange = function(mat){
+  Mini = min(mat)
+  Maxi = max(mat)
+  Min.Max = c(Mini, Maxi)
+  names(Min.Max) = c("Lower Bound","Upper Bound")
+  return(Min.Max)
+}
+
+```
+
+Set up a function, findRc, to find the smallest radius to make the network fully connected
+
+```{r}
+
+findRc = function(nodes, tol = 0.05){
+  mat = dist(nodes)
+  lower = findRange(mat)[1]
+  upper = findRange(mat)[2]
+  midpt = sum(upper, lower) / 2
+
+  while(upper-lower > tol){
+    TranMat = findTranMat(mat, midpt)
+    EigenValue = round(getEigen2(TranMat), digits = 5)
+    if(EigenValue < 1){
+      upper = midpt
+    }else{
+      lower = midpt
+    }
+    midpt = sum(upper, lower) / 2
+  }
+  names(upper) = "The smallest Radius"
+  return(upper)
+}
+
+```
+
+
+Check the findRc function with random Node
+
+```{r}
+
+nodes = getNodes(100)
+findRc(nodes)
+
+```
+
+##3
+
+Generate 1000 networks and for each find the value for Rc. Examine the distribution of these Rc values.
+
+sample with size n = 20, n = 50, n = 100
+
+```{r}
+
+Rc1 = c()
+Rc2 = c()
+Rc3 = c()
+
+seeds = vector(length = 2, mode = "list")
+set.seed(12345678)
+
+n1 = 20
+n2 = 50
+n3 = 100
+
+networks1 = vector("list",1000)
+networks2 = vector("list",1000)
+networks3 = vector("list",1000)
+
+for(i in 1:1000){
+  seeds[[i]] = .Random.seed
+  networks1[[i]] = getNodes(n1)
+  networks2[[i]] = getNodes(n2)
+  networks3[[i]] = getNodes(n3)
+}
+
+
+
+networks = list(networks1, networks2, networks3)
+
+for(i in 1:1000){
+  Rc1[i] = findRc(networks1[[i]])
+  Rc2[i] = findRc(networks2[[i]])
+  Rc3[i] = findRc(networks3[[i]])
+}
+
+Rc = list(Rc1, Rc2, Rc3)
+
+```
+
+As n goes up, the radius of the Rc is getter smaller.
+Set up a function to visualize the distribution of Rcs.
+
+```{r}
+
+plotRc = function(Rc1, Rc2 = NULL, Rc3 = NULL, bw = 2, title = 'Compare Rc with different size'){
+  Rcs = data.frame(Rc123 = c(Rc1, Rc2, Rc3), 
+                   strat = rep(c(1,2,3), times = c(length(Rc1), length(Rc2), length(Rc3))))
+  ggplot(data = Rcs) + 
+    geom_density(aes(x = Rc123, y = ..density.., color = factor(strat)), bw = bw) +
+    scale_x_continuous("Smallest Radius(Rc) for 1000 Networks") +
+    ggtitle(title) +
+    scale_colour_manual(values = c(1,2,3), name = 'Density', labels = c('Rc1','Rc2','Rc3'))
+}
+
+```
+
+Plot distribution of Rcs.
+
+```{r}
+
+plotRc(Rc1, Rc2, Rc3, title = "Compare Rc for 1000 networks with different size\nRc1 with size of 20, Rc2 with size of 50, Rc3 with size of 100")
+
+```
+
+Plot Histogram of Rcs with summary.
+
+```{r}
+
+Rc = list(Rc1, Rc2, Rc3)
+Hist1 = hist(Rc1, breaks = 20, col = "pink", 
+             xlab = "Rc of 1000 networks with size 20", 
+             main = "Histogram of Rc of 1000 Networks")
+Hist1
+Hist2 = hist(Rc2, breaks = 20, col = "blue", 
+             xlab = "Rc of 1000 networks with size 50", 
+             main = "Histogram of Rc of 1000 Networks")
+Hist2
+Hist3 = hist(Rc3, breaks = 20, col = "green", 
+             xlab = "Rc of 1000 networks with size 100", 
+             main = "Histogram of Rc of 1000 Networks")
+Hist3
+     
+```
+
+Set up min, median, mean, and max values for Rc
+
+```{r}
+
+Min = c()
+Median = c()
+Mean = c()
+Max = c()
+
+for (i in 1:3){
+  Min[i] = min(Rc[[i]])
+  Median[i] = median(Rc[[i]])
+  Mean[i] = mean(Rc[[i]])
+  Max[i] = max(Rc[[i]])
+}
+
+i = c()
+j = c()
+k = c()
+l = c()
+
+for (h in 1:3){
+  i[h] = which(abs(Rc[[h]] - Min[h]) == min(abs(Rc[[h]] - Min[h])))[1]
+  j[h] = which(abs(Rc[[h]] - Median[h]) == min(abs(Rc[[h]] - Median[h])))[1]
+  k[h] = which(abs(Rc[[h]] - Mean[h]) == min(abs(Rc[[h]] - Mean[h])))[1]
+  l[h] = which(abs(Rc[[h]] - Max[h]) == min(abs(Rc[[h]] - Max[h])))[1]
+}
+
+```
+
+##4
+Plots of Rc with the four values(min, median, mean, max)
+
+Plots of Rc with the min
+```{r}
+
+mindf = list()
+connected = list()
+connections = list()
+
+for (h in 1:3){
+  mindf[[h]] = data.frame(networks[[h]][i[h]])
+  comb = combn(nrow(mindf[[h]]), 2)
+  connected[[h]] = comb[,which(as.numeric(dist(data.frame(networks[[h]][i[h]])))<=Rc[[h]][i[h]])]
+  connections[[h]] = data.frame(
+    from = mindf[[h]][connected[[h]][1, ], 1:2],
+    to = mindf[[h]][connected[[h]][2, ], 1:2]
+    )
+  names(connections[[h]]) = c("x1", "y1", "x2", "y2")
+}
+
+color = c("pink", "blue", "green")
+title = c("Plots of the Min Rc with size of 20", "Plots of the Min Rc with size of 50", "Plots of the Min Rc with size of 100")
+
+for (h in 1:3){
+  plot = 
+    ggplot(mindf[[h]], aes(x = mindf[[h]]$x, y = mindf[[h]]$y)) + 
+    geom_point(col = "black", size = 3) +
+    geom_segment(data = connections[[h]], 
+                 aes(x = x1, y = y1, xend = x2, yend = y2), col = color[h]) +
+    labs(x = "X-coordinate", y = "Y-coordinate", title = title[h])
+  print(plot)
+}
+
+
+```
+
+Plots of Rc with the median
+
+```{r}
+
+mindf = list()
+connected = list()
+connections = list()
+
+for (h in 1:3){
+  mindf[[h]] = data.frame(networks[[h]][j[h]])
+  comb = combn(nrow(mindf[[h]]), 2)
+  connected[[h]] = comb[,which(as.numeric(dist(data.frame(networks[[h]][j[h]])))<=Rc[[h]][j[h]])]
+  connections[[h]] = data.frame(
+    from = mindf[[h]][connected[[h]][1, ], 1:2],
+    to = mindf[[h]][connected[[h]][2, ], 1:2]
+    )
+  names(connections[[h]]) = c("x1", "y1", "x2", "y2")
+}
+
+color = c("pink", "blue", "green")
+title = c("Plots of the Median Rc with size of 20", "Plots of the Median Rc with size of 50", "Plots of the Median Rc with size of 100")
+
+for (h in 1:3){
+  plot = 
+    ggplot(mindf[[h]], aes(x = mindf[[h]]$x, y = mindf[[h]]$y)) + 
+    geom_point(col = "black", size = 3) +
+    geom_segment(data = connections[[h]], 
+                 aes(x = x1, y = y1, xend = x2, yend = y2), col = color[h]) +
+    labs(x = "X-coordinate", y = "Y-coordinate", title = title[h])
+  print(plot)
+}
+
+
+```
+
+Plots of Rc with mean
+
+```{r}
+
+mindf = list()
+connected = list()
+connections = list()
+
+for (h in 1:3){
+  mindf[[h]] = data.frame(networks[[h]][k[h]])
+  comb = combn(nrow(mindf[[h]]), 2)
+  connected[[h]] = comb[,which(as.numeric(dist(data.frame(networks[[h]][k[h]])))<=Rc[[h]][k[h]])]
+  connections[[h]] = data.frame(
+    from = mindf[[h]][connected[[h]][1, ], 1:2],
+    to = mindf[[h]][connected[[h]][2, ], 1:2]
+    )
+  names(connections[[h]]) = c("x1", "y1", "x2", "y2")
+}
+
+color = c("pink", "blue", "green")
+title = c("Plots of the Mean Rc with size of 20", "Plots of the Mean Rc with size of 50", "Plots of the Mean Rc with size of 100")
+
+for (h in 1:3){
+  plot = 
+    ggplot(mindf[[h]], aes(x = mindf[[h]]$x, y = mindf[[h]]$y)) + 
+    geom_point(col = "black", size = 3) +
+    geom_segment(data = connections[[h]], 
+                 aes(x = x1, y = y1, xend = x2, yend = y2), col = color[h]) +
+    labs(x = "X-coordinate", y = "Y-coordinate", title = title[h])
+  print(plot)
+}
+
+
+```
+
+Plots of Rc with the largest
+
+```{r}
+
+mindf = list()
+connected = list()
+connections = list()
+
+for (h in 1:3){
+  mindf[[h]] = data.frame(networks[[h]][l[h]])
+  comb = combn(nrow(mindf[[h]]), 2)
+  connected[[h]] = comb[,which(as.numeric(dist(data.frame(networks[[h]][l[h]])))<=Rc[[h]][l[h]])]
+  connections[[h]] = data.frame(
+    from = mindf[[h]][connected[[h]][1, ], 1:2],
+    to = mindf[[h]][connected[[h]][2, ], 1:2]
+    )
+  names(connections[[h]]) = c("x1", "y1", "x2", "y2")
+}
+
+color = c("pink", "blue", "green")
+title = c("Plots of the Largest Rc with size of 20", "Plots of the Largest Rc with size of 50", "Plots of the Largest Rc with size of 100")
+
+for (h in 1:3){
+  plot = 
+    ggplot(mindf[[h]], aes(x = mindf[[h]]$x, y = mindf[[h]]$y)) + 
+    geom_point(col = "black", size = 3) +
+    geom_segment(data = connections[[h]], 
+                 aes(x = x1, y = y1, xend = x2, yend = y2), col = color[h]) +
+    labs(x = "X-coordinate", y = "Y-coordinate", title = title[h])
+  print(plot)
+}
+
+
+```
+
+
