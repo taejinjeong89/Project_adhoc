@@ -23,3 +23,6 @@ A very basic aspect of ad hoc networks that people need to understand is how the
 and complete connectivity changes with respect to the broadcasting power. Increased power levels
 allow one to send a message over a larger distance.
 </br>
+<br>
+The goal of the project is to find the best way to set up the power of the nodes to run the system
+</br>
