@@ -9,7 +9,18 @@ output:
 library(ggplot2)
 ```
 
-##1
+##Introduction
+
+  Wireless networks are all around us. Cell phones communicate with a base-station to send and receive calls. Calls are relayed from base-station to base-station as the cell phone moves away from one and closer to another. A new idea of organizing networks is to avoid the need for a central base-station that coordinates communications. Instead, messages are relayed by “hopping” from one node to the next to the next until it reaches its destination. In other words, one can send a message by using other devices in the network to relay the message to the next device, and so on. These are called ad hoc networks because there is no centralized node or fixed structure or topology for the network. Instead, devices can move over time, and dynamically enter and exit the network. And so the route a message takes from one device to another depends on the other nodes. 
+  Ad hoc networks are very promising and becoming important. At their most immediately
+practical, ad hoc networks can allow nodes outside of a regular network to communicate by piggybacking off of nodes within the network. Think of driving along and being between base-stations and so your cell phone call would be dropped. But because of ad hoc networks, your data is relayed through cell phones in other cars closer to the base stations. More ambitously, ad hoc networks might be used in controlling traffic on highways by allowing cars communicate with each other. 
+  A very basic aspect of ad hoc networks that people need to understand is how the communication and complete connectivity changes with respect to the broadcasting power. Increased power levels allow one to send a message over a larger distance.
+
+##Goal
+
+  Set up a random nodes and find the best efficient way to generate the Ad hoc network in terms of radius
+
+#1
 
 Create a getNodes function which generates random Nodes.
 
@@ -45,7 +56,7 @@ test.node
 
 ```
 
-##2
+#2
 Find the smallest radius Rc.
 First, Set up a helper function, findTranMat, to find a transition Matrix(Marcov Matrix for random walk).
 
@@ -124,7 +135,7 @@ findRc(nodes)
 
 ```
 
-##3
+#3
 
 Generate 1000 networks and for each find the value for Rc. Examine the distribution of these Rc values.
 
@@ -243,7 +254,7 @@ for (h in 1:3){
 
 ```
 
-##4
+#4
 Plots of Rc with the four values(min, median, mean, max)
 
 Plots of Rc with the min
@@ -386,3 +397,8 @@ for (h in 1:3){
 ```
 
 
+##Conclusion
+
+  There are two factors we consider; The broadness, how broad Ad hoc should cover and the efficiency, how much power should Ad hoc should take from each node. As the result shows above, the more power which is begger radius, the more area being covered. It implies that Ad hoc can cover most of the new coming nodes if it is too far away. But if the only consideration of the Ad hoc is efficiency, then the smallest radius is the best way to set up. But it could lose potential nodes since the distance allowed to be connected to the network should be less than the smallest radius. 
+  Since there are two factor, one is random variable and one is the variable which can be controlled, it is better to set up the system based on the number of nodes which is random variable.  
+  For the city which has lots of people, it is better to set up the radius in between the smallest and mean since the number of nodes is enough to cover all of the potential nodes. But for the city which has a few people, it is better to set up in between mean and the largest since the new coming node could be far away in terms of distance.
